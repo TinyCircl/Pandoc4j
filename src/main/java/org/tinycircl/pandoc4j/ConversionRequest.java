@@ -149,6 +149,7 @@ public final class ConversionRequest {
         private final List<String> extraArgs = new ArrayList<>();
         private PandocInstallation installation;
         private Path workingDirectory;
+        private boolean cleanMarkdownOutput = false;
 
         private Builder() {}
 
@@ -270,6 +271,22 @@ public final class ConversionRequest {
             return arg("--highlight-style=" + style);
         }
 
+        /**
+         * Applies {@link MarkdownCleaner#clean(String)} to the conversion output
+         * before returning it.
+         *
+         * <p>Useful when converting formats such as PPTX whose source files may carry
+         * multi-line accessibility alt-text that Pandoc preserves verbatim, causing
+         * broken {@code ![alt](url)} syntax in the resulting Markdown.
+         *
+         * <p>Has no effect when the output format is not Markdown.
+         * Default: {@code false}.
+         */
+        public Builder cleanMarkdown() {
+            this.cleanMarkdownOutput = true;
+            return this;
+        }
+
         /** Adds any raw Pandoc CLI argument(s). */
         public Builder arg(String... rawArgs) {
             this.extraArgs.addAll(Arrays.asList(rawArgs));
@@ -285,17 +302,19 @@ public final class ConversionRequest {
 
         /** Builds and immediately converts the given file. */
         public String convertFile(Path inputFile) {
-            return build().convertFile(inputFile);
+            String result = build().convertFile(inputFile);
+            return cleanMarkdownOutput ? MarkdownCleaner.clean(result) : result;
         }
 
         /** Builds and immediately converts the given file path string. */
         public String convertFile(String inputFile) {
-            return build().convertFile(inputFile);
+            return convertFile(Path.of(inputFile));
         }
 
         /** Builds and immediately converts the given text. */
         public String convertText(String text) {
-            return build().convertText(text);
+            String result = build().convertText(text);
+            return cleanMarkdownOutput ? MarkdownCleaner.clean(result) : result;
         }
     }
 }

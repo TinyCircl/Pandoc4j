@@ -55,18 +55,26 @@ Official releases are published to Maven Central.
 <dependency>
     <groupId>org.tinycircl</groupId>
     <artifactId>pandoc4j</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
 **Gradle**
 ```groovy
-implementation 'org.tinycircl:pandoc4j:0.2.0'
+implementation 'org.tinycircl:pandoc4j:0.2.1'
 ```
 
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 0.2.1
+
+Patch release – fully backwards-compatible with 0.2.0.
+
+- Added `MarkdownCleaner` utility class for post-processing Pandoc Markdown output
+- Added `ConversionRequest.Builder.cleanMarkdown()` for inline post-processing in the conversion chain
+- Bug: Pandoc preserves multi-line accessibility alt-text from PPTX slides verbatim, breaking `![alt](url)` syntax → fixed by `MarkdownCleaner`
 
 ### Upgrading to 0.2.0
 
@@ -120,6 +128,15 @@ String result = Pandoc4j.builder()
     .extractMedia("/output/media")
     .convertFile(Path.of("report.docx"));
 
+// PPTX → Markdown with post-processing (fix broken alt-text, collapse extra blank lines)
+String slides = Pandoc4j.builder()
+    .from(Format.PPTX)
+    .to(Format.MARKDOWN_GFM)
+    .wrapNone()
+    .extractMedia("/output/media")
+    .cleanMarkdown()                      // applies MarkdownCleaner defaults
+    .convertFile(Path.of("slides.pptx"));
+
 // Shift heading levels, add table of contents
 String standalone = Pandoc4j.builder()
     .from(Format.MARKDOWN)
@@ -136,6 +153,56 @@ String out = Pandoc4j.builder()
     .arg("--highlight-style=tango", "--number-sections")
     .convertText(content);
 ```
+
+---
+
+## Markdown Post-Processing
+
+`MarkdownCleaner` sanitises Markdown output from Pandoc. Use it standalone or chain it directly
+into the builder with `.cleanMarkdown()`.
+
+### Problem this solves
+
+Pandoc preserves accessibility metadata from source documents (e.g. PowerPoint alt-text) verbatim.
+When that metadata contains newlines the resulting Markdown is syntactically broken:
+
+```markdown
+<!-- broken (alt-text has embedded newline) -->
+![文本, 信件
+描述已自动生成](ppt/media/image1.png "内容占位符 4")
+
+<!-- fixed -->
+![文本, 信件 描述已自动生成](ppt/media/image1.png "内容占位符 4")
+```
+
+### Usage
+
+```java
+// Option 1 – standalone, all defaults
+String clean = MarkdownCleaner.clean(pandocOutput);
+
+// Option 2 – inline with the conversion builder
+String clean = Pandoc4j.builder()
+        .from(Format.PPTX)
+        .to(Format.MARKDOWN_GFM)
+        .wrapNone()
+        .cleanMarkdown()
+        .convertFile(path);
+
+// Option 3 – fine-grained control
+String clean = MarkdownCleaner.builder()
+        .fixInlineNewlines(true)          // collapse \n inside ![alt](url) and [text](url)
+        .collapseBlankLines(true)         // reduce excessive blank lines
+        .maxConsecutiveBlankLines(1)      // default: 2
+        .clean(pandocOutput);
+```
+
+### Built-in rules
+
+| Rule | Default | Description |
+|---|---|---|
+| `fixInlineNewlines` | on | Collapses embedded `\r`/`\n` in image alt-text and hyperlink text into a single space |
+| `collapseBlankLines` | on | Reduces runs of more than N consecutive blank lines (default N=2) |
 
 ---
 
@@ -282,9 +349,10 @@ The library resolves the Pandoc binary in this order:
 ```
 pandoc4j
 ├── Pandoc4j.java                    ← Static facade API
-├── ConversionRequest.java           ← Fluent builder
+├── ConversionRequest.java           ← Fluent builder (includes .cleanMarkdown())
 ├── Format.java                      ← 50+ format enum with extensions
 ├── ConversionResult.java            ← Process result (exit code, stdout, stderr)
+├── MarkdownCleaner.java             ← Post-processing sanitiser for Pandoc Markdown output
 │
 ├── core/
 │   ├── PandocInstallation.java      ← Binary discovery & version detection
@@ -325,6 +393,7 @@ Release workflow and Central publishing steps for project maintainers are docume
 - [x] **Phase 1** – Core CLI wrapper (file/text conversion, fluent builder, concurrent safety)
 - [x] **Phase 2** – Spring Boot Starter (auto-configuration, `PandocClient` bean)
 - [x] **Phase 3** – Pandoc JSON AST (Java sealed-class model, bidirectional mapping)
+- [x] **Phase 3.1** – Markdown post-processing (`MarkdownCleaner`, builder `.cleanMarkdown()`)
 - [ ] **Phase 4** – `pandoc4j-binary` (auto-download Pandoc binary, zero-install)
 - [ ] **Phase 5** – Async/reactive support (`CompletableFuture`, Project Reactor)
 - [ ] **Phase 6** – Lua filter / JSON filter pipeline API
