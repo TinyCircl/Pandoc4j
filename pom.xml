@@ -2,34 +2,35 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.xiaoyuan</groupId>
+    <groupId>org.tinycircl</groupId>
     <artifactId>pandoc4j</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
     <name>pandoc4j</name>
     <description>Java SDK wrapper for Pandoc – convert documents between formats programmatically</description>
-    <url>https://github.com/xiaoyuan/pandoc4j</url>
+    <url>https://github.com/TinyCircl/Pandoc4j</url>
 
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <developers>
         <developer>
-            <id>xiaoyuan</id>
-            <name>xiaoyuan</name>
-            <url>https://github.com/xiaoyuan</url>
+            <id>tinycircl</id>
+            <name>TinyCircl</name>
+            <email>aoxu2000@gmail.com</email>
+            <url>https://github.com/TinyCircl</url>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/xiaoyuan/pandoc4j.git</connection>
-        <developerConnection>scm:git:ssh://github.com/xiaoyuan/pandoc4j.git</developerConnection>
-        <url>https://github.com/xiaoyuan/pandoc4j/tree/main</url>
+        <connection>scm:git:https://github.com/TinyCircl/Pandoc4j.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/TinyCircl/Pandoc4j.git</developerConnection>
+        <url>https://github.com/TinyCircl/Pandoc4j</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -40,13 +41,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.11.4</junit.version>
         <spring-boot.version>4.0.3</spring-boot.version>
-        <jackson.version>2.18.3</jackson.version>
+        <jackson.version>3.1.0</jackson.version>
     </properties>
 
     <dependencies>
         <!-- Jackson – required for Pandoc JSON AST parsing/serialization -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
@@ -55,13 +56,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
-            <version>${spring-boot.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <!-- Generates META-INF/spring-configuration-metadata.json for IDE completion -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
             <version>${spring-boot.version}</version>
             <optional>true</optional>
         </dependency>
@@ -91,12 +85,28 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.9.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-configuration-processor</artifactId>
+                            <version>${spring-boot.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-proc:full</arg>
                     </compilerArgs>
@@ -107,7 +117,69 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
             </plugin>
+            <!-- Sources jar – required by Maven Central -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar-no-fork</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc jar – required by Maven Central -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.11.2</version>
+                <configuration>
+                    <doclint>none</doclint>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <!--
+      Release profile: activated with mvn deploy -P release
+      Requires: GPG key, Sonatype Central Portal account, and settings.xml server credentials.
+      See README Publishing section for full instructions.
+    -->
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- GPG sign all artifacts -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals><goal>sign</goal></goals>
+                                <configuration>
+                                    <!-- gpg.keyname can be set via -Dgpg.keyname=<KEY_ID> -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
