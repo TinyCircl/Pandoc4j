@@ -48,45 +48,7 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 
 ## Installation
 
-Two distribution channels are available. JitPack can be consumed directly from GitHub tags or commits; Maven Central coordinates become available after the official release is published.
-
----
-
-### Option A – JitPack *(available immediately)*
-
-No registration needed. JitPack builds directly from the GitHub repository.
-
-**Maven**
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-<dependency>
-    <groupId>com.github.TinyCircl</groupId>
-    <artifactId>Pandoc4j</artifactId>
-    <version>v0.2.0</version>   <!-- or a commit hash -->
-</dependency>
-```
-
-**Gradle**
-```groovy
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-dependencies {
-    implementation 'com.github.TinyCircl:Pandoc4j:v0.2.0'
-}
-```
-
----
-
-### Option B – Maven Central *(recommended for production)*
-
-After publishing to Maven Central (see [Publishing](#publishing) below), the dependency becomes:
+Official releases are published to Maven Central.
 
 **Maven**
 ```xml
@@ -352,67 +314,9 @@ pandoc4j
 
 ---
 
-## Publishing
+## Maintainer Docs
 
-### JitPack（已就绪，无需额外操作）
-
-JitPack 会在首次有人请求该坐标时自动构建。访问：
-
-```
-https://jitpack.io/#TinyCircl/Pandoc4j
-```
-
-点击 **"Get it"** 即可触发构建。之后所有人可直接添加依赖使用。
-如需发布正式版，在 GitHub 上创建一个 Tag（如 `v0.2.0`），JitPack 会自动识别。
-
----
-
-### Maven Central（一次性配置）
-
-**第一步：注册 Sonatype Central Portal**
-
-1. 前往 [central.sonatype.com](https://central.sonatype.com) 注册账号
-2. 申请并验证命名空间 `org.tinycircl`
-3. 在账号设置中生成 **User Token**（即 `username` + `password`）
-
-**第二步：配置 `~/.m2/settings.xml`**
-
-```xml
-<settings>
-  <servers>
-    <server>
-      <id>central</id>
-      <username><!-- Sonatype User Token username --></username>
-      <password><!-- Sonatype User Token password --></password>
-    </server>
-  </servers>
-</settings>
-```
-
-**第三步：生成 GPG 密钥**
-
-```bash
-gpg --full-generate-key
-# 查看 key ID
-gpg --list-secret-keys --keyid-format=long
-# 上传公钥到 key server
-gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
-```
-
-**第四步：发布**
-
-```bash
-# 确保 pom.xml 中的版本号不带 -SNAPSHOT（如 0.2.0）
-
-# 发布到 Central Portal（默认会先上传并校验，随后需在网页上手动确认 Publish）
-mvn -P release -Dgpg.keyname=<KEY_ID> deploy
-
-# Windows PowerShell 如遇 -Dgpg.keyname 参数解析问题，可改用
-cmd /c "mvn -P release -Dgpg.keyname=<KEY_ID> deploy"
-```
-
-发布完成后在 [central.sonatype.com](https://central.sonatype.com) 点击 **Publish** 确认，
-约 10-30 分钟后同步到 Maven Central 搜索。
+Release workflow and Central publishing steps for project maintainers are documented in [`docs/deploy.md`](docs/deploy.md).
 
 ---
 
