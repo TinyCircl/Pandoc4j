@@ -48,6 +48,9 @@ build/
 ### Windsurf / Cascade ###
 .windsurf/
 
+### Local-only test sandbox (never committed) ###
+local-test/
+
 ### macOS ###
 .DS_Store
 .AppleDouble
