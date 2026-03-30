@@ -36,6 +36,7 @@ public final class ConversionRequest {
     private final PandocInstallation installation;
     /** User-specified persistent working dir; {@code null} means use an auto-managed temp dir. */
     private final Path workingDirectory;
+    private final long timeoutSeconds;
 
     private ConversionRequest(Builder builder) {
         this.inputFormat      = builder.inputFormat;
@@ -43,6 +44,7 @@ public final class ConversionRequest {
         this.extraArgs        = Collections.unmodifiableList(new ArrayList<>(builder.extraArgs));
         this.installation     = builder.installation;
         this.workingDirectory = builder.workingDirectory;
+        this.timeoutSeconds   = builder.timeoutSeconds;
     }
 
     // ── Execution ─────────────────────────────────────────────────────────
@@ -62,7 +64,7 @@ public final class ConversionRequest {
     public String convertFile(Path inputFile) {
         try (WorkingDirectory wd = resolvedWorkingDirectory()) {
             List<String> args = buildArgs(inputFile, null);
-            PandocExecutor executor = new PandocExecutor(resolvedInstallation());
+            PandocExecutor executor = new PandocExecutor(resolvedInstallation(), timeoutSeconds);
             return executor.execute(args, null, wd.getPath()).getOutput();
         }
     }
@@ -89,7 +91,7 @@ public final class ConversionRequest {
         }
         try (WorkingDirectory wd = resolvedWorkingDirectory()) {
             List<String> args = buildArgs(null, text);
-            PandocExecutor executor = new PandocExecutor(resolvedInstallation());
+            PandocExecutor executor = new PandocExecutor(resolvedInstallation(), timeoutSeconds);
             return executor.execute(args, text, wd.getPath()).getOutput();
         }
     }
@@ -149,6 +151,7 @@ public final class ConversionRequest {
         private final List<String> extraArgs = new ArrayList<>();
         private PandocInstallation installation;
         private Path workingDirectory;
+        private long timeoutSeconds = PandocExecutor.DEFAULT_TIMEOUT_SECONDS;
         private boolean cleanMarkdownOutput = false;
 
         private Builder() {}
@@ -168,6 +171,16 @@ public final class ConversionRequest {
         /** Uses a specific {@link PandocInstallation} instead of auto-detection. */
         public Builder withInstallation(PandocInstallation pandocInstallation) {
             this.installation = pandocInstallation;
+            return this;
+        }
+
+        /**
+         * Sets the maximum seconds to wait before forcibly terminating the Pandoc process.
+         *
+         * <p>Values {@code <= 0} fall back to {@link PandocExecutor#DEFAULT_TIMEOUT_SECONDS}.
+         */
+        public Builder withTimeoutSeconds(long timeoutSeconds) {
+            this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : PandocExecutor.DEFAULT_TIMEOUT_SECONDS;
             return this;
         }
 

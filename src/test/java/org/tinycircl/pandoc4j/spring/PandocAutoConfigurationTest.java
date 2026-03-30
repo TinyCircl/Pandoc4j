@@ -1,5 +1,6 @@
 package org.tinycircl.pandoc4j.spring;
 
+import org.tinycircl.pandoc4j.ConversionRequest;
 import org.tinycircl.pandoc4j.Format;
 import org.tinycircl.pandoc4j.core.PandocInstallation;
 import org.junit.jupiter.api.DisplayName;
@@ -55,13 +56,19 @@ class PandocAutoConfigurationTest {
     // ── Properties ────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("pandoc.timeout-seconds property is respected")
+    @DisplayName("pandoc.timeout-seconds property is propagated to ConversionRequest builder")
     void timeoutPropertyIsApplied() {
         contextRunner
                 .withPropertyValues("pandoc.timeout-seconds=30")
                 .run(context -> {
-                    assertThat(context).hasSingleBean(PandocClient.class);
-                    // Bean created without error means property was consumed correctly
+                    PandocClient client = context.getBean(PandocClient.class);
+                    ConversionRequest request = client.builder()
+                            .from(Format.MARKDOWN)
+                            .to(Format.HTML5)
+                            .build();
+                    assertThat(request)
+                            .extracting("timeoutSeconds")
+                            .isEqualTo(30L);
                 });
     }
 

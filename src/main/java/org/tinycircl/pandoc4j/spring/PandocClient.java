@@ -108,7 +108,9 @@ public class PandocClient {
      * }</pre>
      */
     public ConversionRequest.Builder builder() {
-        return ConversionRequest.builder().withInstallation(installation);
+        return ConversionRequest.builder()
+                .withInstallation(installation)
+                .withTimeoutSeconds(timeoutSeconds);
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────
