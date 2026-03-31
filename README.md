@@ -55,18 +55,26 @@ Official releases are published to Maven Central.
 <dependency>
     <groupId>org.tinycircl</groupId>
     <artifactId>pandoc4j</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
 </dependency>
 ```
 
 **Gradle**
 ```groovy
-implementation 'org.tinycircl:pandoc4j:0.2.1'
+implementation 'org.tinycircl:pandoc4j:0.2.2'
 ```
 
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 0.2.2
+
+Patch release – fully backwards-compatible with 0.2.1.
+
+- Added `ConversionRequest.Builder.withTimeoutSeconds(long)` for per-conversion timeout overrides
+- `PandocClient.builder()` now inherits Spring Boot's `pandoc.timeout-seconds` setting
+- Default timeout remains `120` seconds; non-positive timeout values fall back to the default
 
 ### Upgrading to 0.2.1
 
@@ -145,6 +153,13 @@ String standalone = Pandoc4j.builder()
     .tableOfContents()
     .shiftHeadingLevelBy(1)
     .convertText(markdownContent);
+
+// Override timeout for one slow conversion
+String html = Pandoc4j.builder()
+    .from(Format.MARKDOWN)
+    .to(Format.HTML5)
+    .withTimeoutSeconds(30)
+    .convertText(largeMarkdown);
 
 // Raw argument passthrough (forward-compatible with new Pandoc versions)
 String out = Pandoc4j.builder()
@@ -239,7 +254,7 @@ public class DocumentService {
     }
 
     public String advancedConvert(Path input) {
-        return pandoc.builder()
+        return pandoc.builder()           // inherits pandoc.timeout-seconds by default
             .to(Format.MARKDOWN_GFM)
             .wrapNone()
             .convertFile(input);

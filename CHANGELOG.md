@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.2 - 2026-03-30
+
+### Highlights
+
+- Added `ConversionRequest.Builder.withTimeoutSeconds(long)` for per-request Pandoc timeout overrides
+- Propagated Spring Boot's `pandoc.timeout-seconds` setting into `PandocClient.builder()`
+- Added regression coverage for timeout propagation in Spring auto-configuration
+
+### Upgrade Notes
+
+- Patch release – fully backwards-compatible with `0.2.1`
+- Existing `Pandoc4j` and `PandocClient` call sites continue to work unchanged
+- Use `.withTimeoutSeconds(...)` only when a specific conversion needs a timeout different from the default/client-level configuration
+
+### Compatibility
+
+- Java baseline remains `21`
+- Maven coordinates remain `org.tinycircl:pandoc4j`
+- Default timeout remains `120` seconds unless overridden
+
 ## 0.2.0 - 2026-03-19
 
 ### Highlights

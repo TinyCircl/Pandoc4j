@@ -28,13 +28,17 @@ Example `settings.xml` server entry:
 
 ## Before Releasing
 
-1. Update `pom.xml` to the target release version, for example `0.2.1`.
+1. Update `pom.xml` to the target release version, for example `0.2.2`.
 2. Update user-facing version references in `README.md`.
 3. Add or update release notes in `CHANGELOG.md`.
 4. Run a release-style verification build:
 
 ```bash
 mvn clean -P release -Dgpg.skip=true verify
+```
+
+```powershell
+mvn clean -P release "-Dgpg.skip=true" verify
 ```
 
 ## Publishing
@@ -49,6 +53,12 @@ Release command:
 
 ```bash
 mvn -P release -Dgpg.keyname=<KEY_ID> deploy
+```
+
+PowerShell:
+
+```powershell
+mvn -P release "-Dgpg.keyname=<KEY_ID>" deploy
 ```
 
 Windows fallback:
@@ -79,7 +89,7 @@ After `mvn deploy` succeeds:
 
 1. Verify the new version appears on Maven Central
 2. Verify the dependency snippet on `mvnrepository.com` or Central
-3. Create and push a Git tag such as `v0.2.0`
+3. Create and push a Git tag such as `v0.2.2`
 4. If needed, update any release announcement or project homepage references
 
 ## Notes
