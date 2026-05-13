@@ -1,0 +1,27 @@
+{
+  "defaultVersion": "3.9.0.2",
+  "versions": {
+    "3.9.0.2": {
+      "windows-x86_64": {
+        "asset": "pandoc-3.9.0.2-windows-x86_64.zip",
+        "sha256": "c97542f2800f446e788d9f74237856d995421ad1bb3cc8324286840c5f272d3a"
+      },
+      "macos-arm64": {
+        "asset": "pandoc-3.9.0.2-arm64-macOS.zip",
+        "sha256": "6e9eca844076bcbb599bbeebbba78a70f93b5307782b85c2c272872812c88875"
+      },
+      "macos-x86_64": {
+        "asset": "pandoc-3.9.0.2-x86_64-macOS.zip",
+        "sha256": "b9fbceabccbc8f34ac021a50483fc32f8160568d0b4b2c22d81bb29e3054fd82"
+      },
+      "linux-x86_64": {
+        "asset": "pandoc-3.9.0.2-linux-amd64.tar.gz",
+        "sha256": "a69abfababda8a56969a254b09f9553a7be89ddec00d4e0fe9fd585d71a67508"
+      },
+      "linux-arm64": {
+        "asset": "pandoc-3.9.0.2-linux-arm64.tar.gz",
+        "sha256": "b6d21e8f9c3b15744f5a7ab40248019157ed7793875dbe0383d4c82ff572b528"
+      }
+    }
+  }
+}

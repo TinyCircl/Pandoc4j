@@ -2,13 +2,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>org.tinycircl</groupId>
-    <artifactId>pandoc4j</artifactId>
-    <version>0.2.2</version>
-    <packaging>jar</packaging>
-    <name>pandoc4j</name>
-    <description>Java SDK wrapper for Pandoc – convert documents between formats programmatically</description>
+    <artifactId>pandoc4j-parent</artifactId>
+    <version>0.3.0</version>
+    <packaging>pom</packaging>
+
+    <name>pandoc4j Parent</name>
+    <description>Parent build for pandoc4j modules</description>
     <url>https://github.com/TinyCircl/Pandoc4j</url>
+
+    <modules>
+        <module>pandoc4j</module>
+        <module>pandoc4j-binary</module>
+    </modules>
 
     <licenses>
         <license>
@@ -40,47 +47,40 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.11.4</junit.version>
+        <mockito.version>5.14.2</mockito.version>
         <spring-boot.version>4.0.3</spring-boot.version>
         <jackson.version>3.1.0</jackson.version>
     </properties>
 
-    <dependencies>
-        <!-- Jackson – required for Pandoc JSON AST parsing/serialization -->
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <!-- Spring Boot Autoconfigure – optional: only needed when running in a Spring context -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
-            <version>${spring-boot.version}</version>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Test -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.14.2</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Spring Boot Test for ApplicationContextRunner-based autoconfigure tests -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <version>${spring-boot.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-autoconfigure</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -93,58 +93,60 @@
                     <publishingServerId>central</publishingServerId>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-configuration-processor</artifactId>
-                            <version>${spring-boot.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-proc:full</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-            </plugin>
-            <!-- Sources jar – required by Maven Central -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals><goal>jar-no-fork</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Javadoc jar – required by Maven Central -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.11.2</version>
-                <configuration>
-                    <doclint>none</doclint>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.springframework.boot</groupId>
+                                <artifactId>spring-boot-configuration-processor</artifactId>
+                                <version>${spring-boot.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                        <compilerArgs>
+                            <arg>-proc:full</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.3.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals><goal>jar-no-fork</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.11.2</version>
+                    <configuration>
+                        <doclint>none</doclint>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals><goal>jar</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <!--
@@ -157,7 +159,6 @@
             <id>release</id>
             <build>
                 <plugins>
-                    <!-- GPG sign all artifacts -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -168,7 +169,6 @@
                                 <phase>verify</phase>
                                 <goals><goal>sign</goal></goals>
                                 <configuration>
-                                    <!-- gpg.keyname can be set via -Dgpg.keyname=<KEY_ID> -->
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
@@ -181,5 +181,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

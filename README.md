@@ -17,14 +17,15 @@ pandoc4j follows the same two-package strategy as [pypandoc](https://github.com/
 | Package | Description | Pandoc Required |
 |---|---|---|
 | `pandoc4j` | Wrapper only – use your own Pandoc installation | Yes |
-| `pandoc4j-binary` | Includes Pandoc binary out of the box *(coming soon)* | No |
+| `pandoc4j-binary` | Auto-downloads a managed Pandoc binary on first use | No |
 
 ---
 
 ## Requirements
 
 - **Java 21+**
-- **Pandoc** installed on the machine (for `pandoc4j`; see [pandoc.org/installing](https://pandoc.org/installing.html))
+- **Pandoc** installed on the machine when using wrapper-only `pandoc4j`
+- No OS-level Pandoc installation is required when using `pandoc4j-binary`
 
 ### Installing Pandoc
 
@@ -55,18 +56,57 @@ Official releases are published to Maven Central.
 <dependency>
     <groupId>org.tinycircl</groupId>
     <artifactId>pandoc4j</artifactId>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
 **Gradle**
 ```groovy
-implementation 'org.tinycircl:pandoc4j:0.2.2'
+implementation 'org.tinycircl:pandoc4j:0.3.0'
+```
+
+**Zero-install Maven**
+```xml
+<dependency>
+    <groupId>org.tinycircl</groupId>
+    <artifactId>pandoc4j-binary</artifactId>
+    <version>0.3.0</version>
+</dependency>
+```
+
+**Zero-install Gradle**
+```groovy
+implementation 'org.tinycircl:pandoc4j-binary:0.3.0'
+```
+
+`pandoc4j-binary` depends on `pandoc4j`, so application code can keep using
+the same `Pandoc4j` and `PandocClient` APIs.
+
+When Java does not automatically use your local system proxy, pass standard JVM
+proxy properties or configure `pandoc.binary.proxy-host` / `proxy-port`:
+
+```powershell
+.\mvnw.cmd -pl pandoc4j-binary -am `
+  "-Dtest=PandocBinaryDownloadIT" `
+  "-Dsurefire.failIfNoSpecifiedTests=false" `
+  "-Dhttps.proxyHost=127.0.0.1" `
+  "-Dhttps.proxyPort=7890" `
+  "-Dpandoc.binary.debug=true" `
+  test
 ```
 
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 0.3.0
+
+`pandoc4j` remains wrapper-only and backwards-compatible with `0.2.2`.
+
+- Added the optional `pandoc4j-binary` artifact for zero-install Pandoc resolution
+- Converted the repository into a Maven reactor with separate `pandoc4j` and `pandoc4j-binary` modules
+- Added `PandocInstallationProvider` extension points for managed binary providers
+- Added proxy and debug controls for GitHub release asset downloads
 
 ### Upgrading to 0.2.2
 
@@ -231,6 +271,15 @@ Zero-configuration auto-wiring. Add the dependency and inject `PandocClient`:
 pandoc:
   executable-path: /usr/local/bin/pandoc   # optional – auto-detected if omitted
   timeout-seconds: 60                       # optional – default: 120
+  binary:
+    enabled: true                           # only active when pandoc4j-binary is on the classpath
+    version: 3.9.0.2                         # optional – bundled manifest default
+    cache-dir: ~/.cache/pandoc4j             # optional
+    offline: false                           # optional – use cache only
+    verify-checksum: true                    # optional – default: true
+    proxy-host: 127.0.0.1                     # optional – useful when Java does not use system proxy
+    proxy-port: 7890                          # optional
+    debug: false                              # optional – log download/cache phases
 ```
 
 ### Usage
@@ -352,47 +401,37 @@ List<Future<String>> futures = tasks.stream()
 
 The library resolves the Pandoc binary in this order:
 
-1. `pandoc.executablePath` Spring Boot property / `pandoc.path` system property
+1. `pandoc.executable-path` Spring Boot property / `pandoc.path` system property
 2. `PANDOC_PATH` environment variable
-3. Common OS installation directories (`/usr/local/bin`, `%LOCALAPPDATA%\Pandoc\`, etc.)
-4. `pandoc` / `pandoc.exe` on the system `PATH`
+3. `PandocInstallationProvider` implementations on the classpath, such as `pandoc4j-binary`
+4. Common OS installation directories (`/usr/local/bin`, `%LOCALAPPDATA%\Pandoc\`, etc.)
+5. `pandoc` / `pandoc.exe` on the system `PATH`
 
 ---
 
 ## Project Architecture
 
 ```
-pandoc4j
-├── Pandoc4j.java                    ← Static facade API
-├── ConversionRequest.java           ← Fluent builder (includes .cleanMarkdown())
-├── Format.java                      ← 50+ format enum with extensions
-├── ConversionResult.java            ← Process result (exit code, stdout, stderr)
-├── MarkdownCleaner.java             ← Post-processing sanitiser for Pandoc Markdown output
+pandoc4j-parent
+├── pandoc4j/
+│   ├── Pandoc4j.java                         ← Static facade API
+│   ├── ConversionRequest.java                ← Fluent builder
+│   ├── core/
+│   │   ├── PandocInstallation.java           ← Local discovery + provider SPI
+│   │   ├── PandocInstallationProvider.java   ← Optional resolver extension point
+│   │   ├── PandocExecutor.java               ← ProcessBuilder wrapper
+│   │   └── WorkingDirectory.java             ← Per-request isolated temp directory
+│   ├── ast/                                  ← Pandoc JSON AST model
+│   ├── spring/                               ← Spring Boot auto-configuration
+│   └── exception/                            ← Base and conversion exceptions
 │
-├── core/
-│   ├── PandocInstallation.java      ← Binary discovery & version detection
-│   ├── PandocExecutor.java          ← ProcessBuilder wrapper (timeout, I/O, stderr)
-│   └── WorkingDirectory.java        ← Per-request isolated temp directory
-│
-├── ast/
-│   ├── PandocDocument.java          ← Top-level document model
-│   ├── Block.java                   ← Sealed interface (Para, Header, CodeBlock, ...)
-│   ├── Inline.java                  ← Sealed interface (Str, Emph, Strong, Link, ...)
-│   ├── PandocAstMapper.java         ← JsonNode ↔ Java model converter
-│   ├── Attr.java                    ← Element attributes (id, classes, key-values)
-│   ├── Target.java                  ← Link/image target (url, title)
-│   ├── MathType.java                ← Enum (INLINE_MATH, DISPLAY_MATH)
-│   └── ListAttributes.java          ← Ordered list attributes
-│
-├── spring/
-│   ├── PandocAutoConfiguration.java ← @AutoConfiguration
-│   ├── PandocClient.java            ← Injectable Spring service
-│   └── PandocProperties.java        ← @ConfigurationProperties(prefix="pandoc")
-│
-└── exception/
-    ├── PandocException.java          ← Base exception
-    ├── PandocNotFoundException.java  ← Pandoc binary not found
-    └── PandocConversionException.java ← Conversion failed (exit code + stderr)
+└── pandoc4j-binary/
+    ├── PandocBinary.java                     ← Managed binary entry point
+    ├── PandocBinaryOptions.java              ← Version/cache/download options
+    ├── PandocBinaryProvider.java             ← ServiceLoader provider
+    ├── PandocBinaryResolver.java             ← Download, cache, checksum, extraction
+    ├── pandoc-binaries.json                  ← Bundled asset manifest
+    └── spring/                               ← Binary Spring Boot auto-configuration
 ```
 
 ---
@@ -400,6 +439,8 @@ pandoc4j
 ## Maintainer Docs
 
 Release workflow and Central publishing steps for project maintainers are documented in [`docs/deploy.md`](docs/deploy.md).
+
+Phase 4 package design is documented in [`docs/phase-4-pandoc4j-binary.md`](docs/phase-4-pandoc4j-binary.md).
 
 ---
 
@@ -409,7 +450,7 @@ Release workflow and Central publishing steps for project maintainers are docume
 - [x] **Phase 2** – Spring Boot Starter (auto-configuration, `PandocClient` bean)
 - [x] **Phase 3** – Pandoc JSON AST (Java sealed-class model, bidirectional mapping)
 - [x] **Phase 3.1** – Markdown post-processing (`MarkdownCleaner`, builder `.cleanMarkdown()`)
-- [ ] **Phase 4** – `pandoc4j-binary` (auto-download Pandoc binary, zero-install)
+- [x] **Phase 4** – [`pandoc4j-binary`](docs/phase-4-pandoc4j-binary.md) (released in 0.3.0)
 - [ ] **Phase 5** – Async/reactive support (`CompletableFuture`, Project Reactor)
 - [ ] **Phase 6** – Lua filter / JSON filter pipeline API
 

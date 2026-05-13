@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0 - 2026-05-13
+
+### Highlights
+
+- Converted the project into a Maven reactor with separate `pandoc4j` and `pandoc4j-binary` modules
+- Added `PandocInstallationProvider` so optional companion artifacts can provide managed Pandoc installations without making the core wrapper download anything
+- Added initial `pandoc4j-binary` support for official Pandoc archive download, SHA-256 verification, cache locking, extraction, ServiceLoader integration, and Spring Boot auto-configuration
+- Added explicit `pandoc.binary.proxyHost` / `pandoc.binary.proxyPort` and `pandoc.binary.debug` controls for managed binary downloads
+
+### Compatibility
+
+- `org.tinycircl:pandoc4j` remains the wrapper-only artifact and keeps the existing public API
+- Explicit `pandoc.path`, `PANDOC_PATH`, and Spring `pandoc.executable-path` settings remain higher priority than managed binary resolution
+
 ## 0.2.2 - 2026-03-30
 
 ### Highlights
